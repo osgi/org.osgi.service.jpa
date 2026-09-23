@@ -1,0 +1,52 @@
+# Set javac settings from JDT prefs
+
+-conditionalpackage					= org.osgi.test.support.*
+-privatepackage						=  \
+	${p}.*
+	
+Import-Package						= \
+	${-signaturetest}, \
+	javax.persistence;			version="[1.0,2.2)" , \
+	javax.persistence.spi;		version="[1.0,2.2)" , \
+	*
+	
+-includeresource 					= \
+	configPropertiesBundle.jar , \
+	defaultPersistenceLocation.jar , \
+	dsfEMFBundle.jar , \
+	emfBuilderBundle.jar ,	\
+	emfBuilderRebindingBundle.jar , \
+	emfBundle.jar	, \
+	emfRebindingWithBuilderBundle.jar , \
+	incompletePersistenceUnitBundle.jar , \
+	multiplePersistenceLocations.jar , \
+	nestedJarPersistenceLocation.jar , \
+	nonStandardPersistenceLocation.jar , \
+	persistenceBundleWithNoHeader.jar , \
+	specificProviderBundle.jar , \
+	staticAccessBundle.jar , \
+	staticAccessWithMapBundle.jar , \
+	unavailableDatasourceBundle.jar,\
+	ctExtenderCapProvidingBundle.jar,\
+	ctExtenderCapRequiringBundle.jar,\
+	extenderCapRequiringBundle.jar
+
+
+# If the bundles which make up the JPA impl change, DO NOT EDIT this runbundles.
+# Edit the cnf/repo/org.osgi.impl.service.jpa/org.osgi.impl.service.jpa-N.N.N.lib file!
+
+-signaturetest                      = org.osgi.service.jpa
+
+p: org.osgi.test.cases.jpa
+
+# Maven build: workspace includes replaced inline (from cnf/includes and build.bnd in osgi/osgi)
+# -make.maven, not -make: the key is a map entry and would displace
+# a project-level -make (webcontainer also builds .war recipes this
+# way). bnd merges all -make.* entries.
+-make.maven: (*).(jar); type=bnd; recipe="bnd/$1.bnd"
+
+testcases.junit3: ${classes;EXTENDS;junit.framework.TestCase;CONCRETE}
+testcases.junit4: ${classes;HIERARCHY_ANNOTATED;org.junit.Test;CONCRETE}
+testcases.junit5: ${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+Test-Cases: ${sort;${uniq;${testcases.junit3};${testcases.junit4};${testcases.junit5}}}
+-plugin.signaturetest: SignatureTest
