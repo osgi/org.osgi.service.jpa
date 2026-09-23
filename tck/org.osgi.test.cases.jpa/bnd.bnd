@@ -1,5 +1,4 @@
 # Set javac settings from JDT prefs
--include: ${includes}/jdt.bnd, ${includes}/osgi.tck.junit-platform.bnd, ${includes}/tck.bnd, ${includes}/cmpn.bnd
 
 -conditionalpackage					= org.osgi.test.support.*
 -privatepackage						=  \
@@ -32,22 +31,22 @@ Import-Package						= \
 	ctExtenderCapRequiringBundle.jar,\
 	extenderCapRequiringBundle.jar
 
--buildpath: \
-	org.osgi.test.support;version=project,\
-    org.osgi.framework;maven-scope=provided;version=1.8, \
-    org.osgi.resource;maven-scope=provided;version=1.0,\
-    org.osgi.util.tracker;maven-scope=provided;version=1.5,\
-	org.osgi.service.jpa;version=latest,\
-	org.osgi.service.jdbc;version=1.0,\
-	org.eclipse.persistence.jpa_spec;version=2.0;packages=javax.persistence.*,\
-	org.osgi.namespace.extender;version=1.0,\
-	org.osgi.namespace.contract;version=1.0
 
 # If the bundles which make up the JPA impl change, DO NOT EDIT this runbundles.
 # Edit the cnf/repo/org.osgi.impl.service.jpa/org.osgi.impl.service.jpa-N.N.N.lib file!
--runbundles						= \
-	org.osgi.service.jpa;version=latest,\
-	org.osgi.impl.service.jpa; version=latest, \
-    org.osgi.impl.service.jdbc.support; version=latest
 
 -signaturetest                      = org.osgi.service.jpa
+
+p: org.osgi.test.cases.jpa
+
+# Maven build: workspace includes replaced inline (from cnf/includes and build.bnd in osgi/osgi)
+# -make.maven, not -make: the key is a map entry and would displace
+# a project-level -make (webcontainer also builds .war recipes this
+# way). bnd merges all -make.* entries.
+-make.maven: (*).(jar); type=bnd; recipe="bnd/$1.bnd"
+
+testcases.junit3: ${classes;EXTENDS;junit.framework.TestCase;CONCRETE}
+testcases.junit4: ${classes;HIERARCHY_ANNOTATED;org.junit.Test;CONCRETE}
+testcases.junit5: ${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+Test-Cases: ${sort;${uniq;${testcases.junit3};${testcases.junit4};${testcases.junit5}}}
+-plugin.signaturetest: SignatureTest
