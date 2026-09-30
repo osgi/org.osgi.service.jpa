@@ -1,5 +1,9 @@
 # org.osgi.service.jpa
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/osgi/org.osgi.service.jpa/badge)](https://securityscorecards.dev/viewer/?uri=github.com/osgi/org.osgi.service.jpa)
+[![build](https://github.com/osgi/org.osgi.service.jpa/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/osgi/org.osgi.service.jpa/actions/workflows/build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/org.osgi/org.osgi.service.jpa)](https://central.sonatype.com/artifact/org.osgi/org.osgi.service.jpa)
+
 OSGi Specification repo for org.osgi.service.jpa
 
 Part of the [OSGi Specification Project](https://projects.eclipse.org/projects/technology.osgi).
