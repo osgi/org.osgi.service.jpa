@@ -18,6 +18,9 @@
 
 package org.osgi.test.cases.jpa.junit;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,18 +30,20 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
+import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.osgi.service.jpa.EntityManagerFactoryBuilder;
-import org.osgi.test.support.compatibility.DefaultTestBundleControl;
-import org.osgi.test.support.tracker.Tracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * @version $Rev$ $Date$
  */
-public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
+public class JPAService_1_1_TestCase extends JPATestSupport {
+
+
 
 	public static final long SERVICE_WAIT_TIME = 5000;
 
@@ -55,19 +60,18 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testUseStandardDataSourceConfig() throws Exception {
 
 		// Install the bundles necessary for this test
-		Bundle persistenceBundle = installBundle("emfBuilderBundle.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("emfBuilderBundle.jar"), true);
 		EntityManagerFactoryBuilder emfBuilder = null;
 		EntityManagerFactory emf = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class, true);
 			emfBuilder = getService(EntityManagerFactoryBuilder.class,
 					"(osgi.unit.name=emfBuilderTestUnit)");
-			assertNotNull(
-					"Unable to retrieve the specified EntityManagerFactoryBuilder",
-					emfBuilder);
+			assertThat(emfBuilder).as("Unable to retrieve the specified EntityManagerFactoryBuilder").isNotNull();
 
 			DataSourceFactory dsf = getService(DataSourceFactory.class);
 
@@ -81,10 +85,9 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 
 			EntityManager em = emf.createEntityManager();
 			try {
-				assertEquals("1", em
+				assertThat(em
 						.createNativeQuery("SELECT X FROM SYSTEM_RANGE(1, 1);")
-						.getSingleResult()
-						.toString());
+						.getSingleResult()).hasToString("1");
 			} finally {
 				em.close();
 			}
@@ -97,7 +100,7 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 			if (emfBuilder != null) {
 				ungetService(emfBuilder);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
@@ -106,21 +109,19 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testUpdateEMFProperties() throws Exception {
 		// Install the bundles necessary for this test
-		Bundle persistenceBundle = installBundle("emfBuilderBundle.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("emfBuilderBundle.jar"), true);
 		EntityManagerFactoryBuilder emfBuilder = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class, true);
 			emfBuilder = getService(EntityManagerFactoryBuilder.class,
 					"(osgi.unit.name=emfBuilderTestUnit)");
-			assertNotNull(
-					"Unable to retrieve the specified EntityManagerFactoryBuilder",
-					emfBuilder);
+			assertThat(emfBuilder).as("Unable to retrieve the specified EntityManagerFactoryBuilder").isNotNull();
 
-			assertNull("There should not be an EntityManagerFactory",
-					getContext()
-							.getServiceReference(EntityManagerFactory.class));
+			assertThat(context
+							.getServiceReference(EntityManagerFactory.class)).as("There should not be an EntityManagerFactory").isNull();
 
 			Map<String,Object> props = new HashMap<>();
 			props.put("javax.persistence.jdbc.driver", "org.h2.Driver");
@@ -134,19 +135,19 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 					EntityManagerFactory.class);
 
 			ServiceReference< ? > serviceRef = getServiceReference(emfService);
-			assertEquals("Hello!", serviceRef.getProperty("say.hello"));
-			assertFalse(Arrays.asList(serviceRef.getPropertyKeys())
-					.contains("javax.persistence.jdbc.password"));
+			assertThat(serviceRef.getProperty("say.hello")).isEqualTo("Hello!");
+			assertThat(Arrays.asList(serviceRef.getPropertyKeys())
+					.contains("javax.persistence.jdbc.password")).isFalse();
 
 			props.put("say.hello", "overridden");
 			emfBuilder.createEntityManagerFactory(props);
 
-			assertNull(serviceRef.getBundle());
+			assertThat(serviceRef.getBundle()).isNull();
 			ungetService(emfService);
 
 			emfService = getService(EntityManagerFactory.class);
 			serviceRef = getServiceReference(emfService);
-			assertEquals("overridden", serviceRef.getProperty("say.hello"));
+			assertThat(serviceRef.getProperty("say.hello")).isEqualTo("overridden");
 
 		} catch (java.lang.IllegalArgumentException ex) {
 			fail("Unknown properties should be ignored and not result in an IllegalArgumentException.");
@@ -154,7 +155,7 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 			if (emfBuilder != null) {
 				ungetService(emfBuilder);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 	
@@ -163,22 +164,20 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testClosingEntityManagerFactoryService() throws Exception {
 
 		// Install the bundles necessary for this test
-				Bundle persistenceBundle = installBundle("emfBuilderBundle.jar");
+				Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("emfBuilderBundle.jar"), true);
 				EntityManagerFactoryBuilder emfBuilder = null;
 				try {
 					waitForService(EntityManagerFactoryBuilder.class, true);
 					emfBuilder = getService(EntityManagerFactoryBuilder.class,
 							"(osgi.unit.name=emfBuilderTestUnit)");
-					assertNotNull(
-							"Unable to retrieve the specified EntityManagerFactoryBuilder",
-							emfBuilder);
+					assertThat(emfBuilder).as("Unable to retrieve the specified EntityManagerFactoryBuilder").isNotNull();
 
-					assertNull("There should not be an EntityManagerFactory",
-							getContext()
-									.getServiceReference(EntityManagerFactory.class));
+					assertThat(context
+									.getServiceReference(EntityManagerFactory.class)).as("There should not be an EntityManagerFactory").isNull();
 
 					Map<String,Object> props = new HashMap<>();
 					props.put("javax.persistence.jdbc.driver", "org.h2.Driver");
@@ -192,26 +191,26 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 					// Test the service is not closeable
 					emfService.close();
 					
-					assertTrue(emfService.isOpen());
-					assertTrue(emfFromBuilder.isOpen());
+					assertThat(emfService.isOpen()).isTrue();
+					assertThat(emfFromBuilder.isOpen()).isTrue();
 					
 					ServiceReference< ? > serviceRef = getServiceReference(emfService);
 
-					ServiceReference< ? >[] serviceReferences = getContext().getServiceReferences(
+					ServiceReference< ? >[] serviceReferences = context.getServiceReferences(
 							EntityManagerFactory.class.getName(), 
 							"(service.id=" + serviceRef.getProperty("service.id")  + ")");
 
-			assertNotNull(serviceReferences);
-			assertEquals(1, serviceReferences.length);
-					assertEquals(serviceRef, serviceReferences[0]);
+			assertThat(serviceReferences).isNotNull();
+					assertThat(serviceReferences).hasSize(1);
+					assertThat(serviceReferences[0]).isEqualTo(serviceRef);
 					
 			// Now close the builder
 			emfFromBuilder.close();
 
-			assertFalse(emfService.isOpen());
-			assertFalse(emfFromBuilder.isOpen());
+			assertThat(emfService.isOpen()).isFalse();
+			assertThat(emfFromBuilder.isOpen()).isFalse();
 
-			assertFalse(serviceAvailable(EntityManagerFactory.class));
+			assertThat(serviceAvailable(EntityManagerFactory.class)).isFalse();
 
 		} catch (Exception ex) {
 			fail("An exception occurredException.", ex);
@@ -219,7 +218,7 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 					if (emfBuilder != null) {
 						ungetService(emfBuilder);
 					}
-					uninstallBundle(persistenceBundle);
+					persistenceBundle.uninstall();
 				}
 	}
 
@@ -228,31 +227,28 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testReportsCorrectPersistenceProviderDetails()
 			throws Exception {
 
 		// Install the bundles necessary for this test
-		Bundle persistenceBundle = installBundle("emfBuilderBundle.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("emfBuilderBundle.jar"), true);
 		EntityManagerFactoryBuilder emfBuilder = null;
 		EntityManagerFactory emf = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class, true);
 			emfBuilder = getService(EntityManagerFactoryBuilder.class,
 					"(osgi.unit.name=emfBuilderTestUnit)");
-			assertNotNull(
-					"Unable to retrieve the specified EntityManagerFactoryBuilder",
-					emfBuilder);
+			assertThat(emfBuilder).as("Unable to retrieve the specified EntityManagerFactoryBuilder").isNotNull();
 
 			String provider = String
 					.valueOf(getServiceReference(emfBuilder).getProperty(
 							EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER));
 
-			assertEquals(provider, emfBuilder.getPersistenceProviderName());
+			assertThat(emfBuilder.getPersistenceProviderName()).isEqualTo(provider);
 
 			Bundle providerBundle = emfBuilder.getPersistenceProviderBundle();
-			assertNotNull(
-					"EntityManagerFactoryBuilder returned null for PersistenceProviderBundle",
-					providerBundle);
+			assertThat(providerBundle).as("EntityManagerFactoryBuilder returned null for PersistenceProviderBundle").isNotNull();
 
 			boolean found = false;
 			for (ServiceReference< ? > ref : providerBundle
@@ -271,9 +267,7 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 				} catch (ClassNotFoundException cnfe) {}
 			}
 
-			assertTrue(
-					"The provider bundle returned by the EntityManagerFactoryBuilder did not advertise a PersistenceProvider service, nor was it able to load the provider class",
-					found);
+			assertThat(found).as("The provider bundle returned by the EntityManagerFactoryBuilder did not advertise a PersistenceProvider service, nor was it able to load the provider class").isTrue();
 
 		} catch (java.lang.IllegalArgumentException ex) {
 			fail("Unknown properties should be ignored and not result in an IllegalArgumentException.");
@@ -284,31 +278,29 @@ public class JPAService_1_1_TestCase extends DefaultTestBundleControl {
 			if (emfBuilder != null) {
 				ungetService(emfBuilder);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
 	public <T> void waitForService(Class<T> cls, boolean expected) {
-		ServiceTracker<T,T> tracker = new ServiceTracker<>(getContext(),
+		ServiceTracker<T,T> tracker = new ServiceTracker<>(context,
 				cls.getName(), null);
 		tracker.open();
 		Object service = null;
 		try {
-			service = Tracker.waitForService(tracker, SERVICE_WAIT_TIME);
+			service = tracker.waitForService(SERVICE_WAIT_TIME);
 		} catch (InterruptedException intEx) {
 			// service will be null
 		}
 		tracker.close();
 
 		if (expected) {
-			assertNotNull("Service for " + cls.getName()
+			assertThat(service).as("Service for " + cls.getName()
 					+ " was not registered after waiting " + SERVICE_WAIT_TIME
-					+ " milliseconds", service);
+					+ " milliseconds").isNotNull();
 		} else {
-			assertNull(
-					"Service for " + cls.getName()
-							+ " was registered despite not being expected",
-					service);
+			assertThat(service).as("Service for " + cls.getName()
+							+ " was registered despite not being expected").isNull();
 		}
 	}
 }

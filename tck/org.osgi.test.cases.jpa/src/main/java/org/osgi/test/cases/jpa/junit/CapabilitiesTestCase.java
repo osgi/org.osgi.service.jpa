@@ -18,6 +18,7 @@
 
 package org.osgi.test.cases.jpa.junit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.osgi.framework.Version.parseVersion;
 import static org.osgi.namespace.contract.ContractNamespace.CONTRACT_NAMESPACE;
 import static org.osgi.namespace.extender.ExtenderNamespace.EXTENDER_NAMESPACE;
@@ -29,21 +30,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.namespace.contract.ContractNamespace;
 import org.osgi.namespace.extender.ExtenderNamespace;
 import org.osgi.service.jpa.EntityManagerFactoryBuilder;
-import org.osgi.test.support.compatibility.DefaultTestBundleControl;
-import org.osgi.test.support.tracker.Tracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * @version $Rev$ $Date$
  */
-public class CapabilitiesTestCase extends DefaultTestBundleControl {
+public class CapabilitiesTestCase extends JPATestSupport {
+
+
 
 	public static final long SERVICE_WAIT_TIME = 5000;
 
@@ -52,11 +55,12 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testExtenderCapability() throws Exception {
 
 		boolean found = false;
 
-		outer: for (Bundle b : getContext().getBundles()) {
+		outer: for (Bundle b : context.getBundles()) {
 
 			BundleWiring wiring = b.adapt(BundleWiring.class);
 
@@ -86,7 +90,7 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 			}
 		}
 
-		assertTrue("No suitable extender capability found", found);
+		assertThat(found).as("No suitable extender capability found").isTrue();
 	}
 
 	/**
@@ -95,11 +99,12 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
+	@Test
 	public void testContractCapability() throws Exception {
 
 		boolean found = false;
 
-		outer: for (Bundle b : getContext().getBundles()) {
+		outer: for (Bundle b : context.getBundles()) {
 
 			BundleWiring wiring = b.adapt(BundleWiring.class);
 
@@ -151,7 +156,7 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 			}
 		}
 
-		assertTrue("No contract capability found", found);
+		assertThat(found).as("No contract capability found").isTrue();
 	}
 
 	/**
@@ -159,20 +164,20 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testRequireContractCapability() throws Exception {
 		Bundle ctExtenderCap = null;
 		Bundle persistenceBundle = null;
 		try {
-			ctExtenderCap = installBundle(
-					"ctExtenderCapProvidingBundle.jar");
-			persistenceBundle = installBundle("extenderCapRequiringBundle.jar");
+			ctExtenderCap = installer.installBundle(context.getBundle().getEntry("ctExtenderCapProvidingBundle.jar"), true);
+			persistenceBundle = installer.installBundle(context.getBundle().getEntry("extenderCapRequiringBundle.jar"), true);
 			waitForService(EntityManagerFactoryBuilder.class, true);
 		} finally {
 			if (persistenceBundle != null) {
-				uninstallBundle(persistenceBundle);
+				persistenceBundle.uninstall();
 			}
 			if (ctExtenderCap != null) {
-				uninstallBundle(ctExtenderCap);
+				ctExtenderCap.uninstall();
 			}
 		}
 	}
@@ -182,46 +187,43 @@ public class CapabilitiesTestCase extends DefaultTestBundleControl {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testRequireDifferentContractCapability() throws Exception {
 		Bundle ctExtenderCap = null;
 		Bundle persistenceBundle = null;
 		try {
-			ctExtenderCap = installBundle(
-					"ctExtenderCapProvidingBundle.jar");
-			persistenceBundle = installBundle(
-					"ctExtenderCapRequiringBundle.jar");
+			ctExtenderCap = installer.installBundle(context.getBundle().getEntry("ctExtenderCapProvidingBundle.jar"), true);
+			persistenceBundle = installer.installBundle(context.getBundle().getEntry("ctExtenderCapRequiringBundle.jar"), true);
 			waitForService(EntityManagerFactoryBuilder.class, false);
 		} finally {
 			if (persistenceBundle != null) {
-				uninstallBundle(persistenceBundle);
+				persistenceBundle.uninstall();
 			}
 			if (ctExtenderCap != null) {
-				uninstallBundle(ctExtenderCap);
+				ctExtenderCap.uninstall();
 			}
 		}
 	}
 
 	public <T> void waitForService(Class<T> cls, boolean expected) {
-		ServiceTracker<T,T> tracker = new ServiceTracker<>(getContext(),
+		ServiceTracker<T,T> tracker = new ServiceTracker<>(context,
 				cls.getName(), null);
 		tracker.open();
 		Object service = null;
 		try {
-			service = Tracker.waitForService(tracker, SERVICE_WAIT_TIME);
+			service = tracker.waitForService(SERVICE_WAIT_TIME);
 		} catch (InterruptedException intEx) {
 			// service will be null
 		}
 		tracker.close();
 
 		if (expected) {
-			assertNotNull("Service for " + cls.getName()
+			assertThat(service).as("Service for " + cls.getName()
 					+ " was not registered after waiting " + SERVICE_WAIT_TIME
-					+ " milliseconds", service);
+					+ " milliseconds").isNotNull();
 		} else {
-			assertNull(
-					"Service for " + cls.getName()
-							+ " was registered despite not being expected",
-					service);
+			assertThat(service).as("Service for " + cls.getName()
+							+ " was registered despite not being expected").isNull();
 		}
 	}
 }

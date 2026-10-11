@@ -19,14 +19,16 @@
 
 package org.osgi.test.cases.jpa.junit;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import javax.persistence.spi.PersistenceProvider;
 
+import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.jpa.EntityManagerFactoryBuilder;
-import org.osgi.test.support.compatibility.DefaultTestBundleControl;
-import org.osgi.test.support.sleep.Sleep;
-import org.osgi.test.support.tracker.Tracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -37,12 +39,15 @@ import org.osgi.util.tracker.ServiceTracker;
  * @version $Rev$ $Date$
  */
 
-public class PersistenceUnitTests extends DefaultTestBundleControl {
+public class PersistenceUnitTests extends JPATestSupport {
+
+
 
     public static final long SERVICE_WAIT_TIME = 5000;
 
+	@Test
 	public void testDefaultPersistenceLocation() throws Exception {
-		Bundle persistenceBundle = installBundle("defaultPersistenceLocation.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("defaultPersistenceLocation.jar"), true);
 		EntityManagerFactoryBuilder persistenceUnit = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class);
@@ -54,12 +59,13 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 			if (persistenceUnit != null) {
 				ungetService(persistenceUnit);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testNonStandardPersistenceLocation() throws Exception {
-		Bundle persistenceBundle = installBundle("nonStandardPersistenceLocation.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("nonStandardPersistenceLocation.jar"), true);
 		EntityManagerFactoryBuilder persistenceUnit = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class);
@@ -71,12 +77,13 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 			if (persistenceUnit != null) {
 				ungetService(persistenceUnit);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testMultiplePersistenceLocations() throws Exception {
-		Bundle persistenceBundle = installBundle("multiplePersistenceLocations.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("multiplePersistenceLocations.jar"), true);
 		EntityManagerFactoryBuilder persistenceUnit1 = null;
 		EntityManagerFactoryBuilder persistenceUnit2 = null;
 		try {
@@ -97,12 +104,13 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 			if (persistenceUnit2 != null) {
 				ungetService(persistenceUnit2);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testNestedJarPersistenceLocation() throws Exception {
-		Bundle persistenceBundle = installBundle("nestedJarPersistenceLocation.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("nestedJarPersistenceLocation.jar"), true);
 		EntityManagerFactoryBuilder persistenceUnit = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class);
@@ -114,12 +122,13 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 			if (persistenceUnit != null) {
 				ungetService(persistenceUnit);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testPersistenceBundleWithNoHeader() throws Exception {
-		Bundle persistenceBundle = installBundle("persistenceBundleWithNoHeader.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("persistenceBundleWithNoHeader.jar"), true);
 		// Wait for 5 seconds while the JPA provider processes the bundle.  We'd normally use the
 		// waitForService method for this, but no service should be registered and that would cause
 		// an exception.
@@ -127,64 +136,67 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 		long waitTime = 5000;
 		do {
 			try {
-				Sleep.sleep(50);
+				Thread.sleep(50);
 			} catch(InterruptedException intEx) {
 				//
 			}
 		} while (System.currentTimeMillis() - start < waitTime);
 		try {
-			ServiceReference< ? >[] unitRef = getContext().getServiceReferences(
+			ServiceReference< ? >[] unitRef = context.getServiceReferences(
 					EntityManagerFactoryBuilder.class.getName(),
 					"(osgi.unit.name=noHeaderTestUnit)");
-			assertNull("There should be no services that match the filter (osgi.unit.name=noHeaderTestUnit)", unitRef);
+			assertThat(unitRef).as("There should be no services that match the filter (osgi.unit.name=noHeaderTestUnit)").isNull();
 		} finally {
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testPersistenceWithUnavailableDatasource() throws Exception {
-		Bundle persistenceBundle = installBundle("unavailableDatasourceBundle.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("unavailableDatasourceBundle.jar"), true);
 		EntityManagerFactoryBuilder emfBuilder = null;
 		try {
 			waitForService(EntityManagerFactoryBuilder.class);
 			emfBuilder = getService(EntityManagerFactoryBuilder.class, "(osgi.unit.name=unavailableDSTestUnit)");
-			assertNotNull("The EntityManagerFactoryBuilder should be registered even if the datasource is unavailable", emfBuilder);
+			assertThat(emfBuilder).as("The EntityManagerFactoryBuilder should be registered even if the datasource is unavailable").isNotNull();
 		} finally {
 			if (emfBuilder != null) {
 				ungetService(emfBuilder);
 			}
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testPersistenceBundleWithProviderDependency() throws Exception {
-		Bundle persistenceBundle = installBundle("specificProviderBundle.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("specificProviderBundle.jar"), true);
 		// Wait for 5 seconds while the JPA provider processes the bundle.  We'd normally use the
 		// waitForService method for this, but no service should be registered and that would cause
 		// an exception.
 		long start = System.currentTimeMillis();
 		do {
 			try {
-				Sleep.sleep(50);
+				Thread.sleep(50);
 			} catch(InterruptedException intEx) {
 				//
 			}
 		} while (System.currentTimeMillis() - start < SERVICE_WAIT_TIME);
 		try {
-			ServiceReference< ? >[] unitRef = getContext().getServiceReferences(
+			ServiceReference< ? >[] unitRef = context.getServiceReferences(
 					EntityManagerFactoryBuilder.class.getName(),
 					"(osgi.unit.name=absentProviderTestUnit)");
-			assertNull("There should be no services that match the filter (osgi.unit.name=absentProviderTestUnit)", unitRef);
+			assertThat(unitRef).as("There should be no services that match the filter (osgi.unit.name=absentProviderTestUnit)").isNull();
 		} finally {
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
+	@Test
 	public void testPesistenceUnitServiceProperties() throws Exception {
-		Bundle persistenceBundle = installBundle("defaultPersistenceLocation.jar");
+		Bundle persistenceBundle = installer.installBundle(context.getBundle().getEntry("defaultPersistenceLocation.jar"), true);
 		try {
 			waitForService(EntityManagerFactoryBuilder.class);
-			ServiceReference< ? > unitRef = getContext().getServiceReference(
+			ServiceReference< ? > unitRef = context.getServiceReference(
 					EntityManagerFactoryBuilder.class.getName());
 			String unitName = (String) unitRef.getProperty("osgi.unit.name");
 			String unitVersion = (String) unitRef.getProperty("osgi.unit.version");
@@ -212,24 +224,24 @@ public class PersistenceUnitTests extends DefaultTestBundleControl {
 		} catch (Exception ex) {
 			fail("Unable to verify PersistenctUnitInfoService service properties.", ex);
 		} finally {
-			uninstallBundle(persistenceBundle);
+			persistenceBundle.uninstall();
 		}
 	}
 
 	public <S> S waitForService(Class<S> cls) {
-		ServiceTracker<S,S> tracker = new ServiceTracker<>(getContext(), cls,
+		ServiceTracker<S,S> tracker = new ServiceTracker<>(context, cls,
 				null);
         tracker.open();
 		S service = null;
 		try {
-			service = Tracker.waitForService(tracker, SERVICE_WAIT_TIME);
+			service = tracker.waitForService(SERVICE_WAIT_TIME);
 		}
 		catch (InterruptedException intEx) {
 			// service will be null
 		}
         tracker.close();
-        assertNotNull("Service for " + cls.getName() + " was not registered after waiting " +
-            SERVICE_WAIT_TIME + " milliseconds", service);
+        assertThat(service).as("Service for " + cls.getName() + " was not registered after waiting " +
+            SERVICE_WAIT_TIME + " milliseconds").isNotNull();
 		return service;
     }
 }
