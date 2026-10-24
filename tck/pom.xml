@@ -32,7 +32,7 @@
 		<org.osgi.service.cm.version>1.6.0</org.osgi.service.cm.version>
 		<org.osgi.service.jdbc.version>1.1.0</org.osgi.service.jdbc.version>
 		<org.osgi.util.tracker.version>1.5.4</org.osgi.util.tracker.version>
-		<slf4j.version>1.7.36</slf4j.version>
+		<slf4j.version>2.0.20</slf4j.version>
 	</properties>
 
 	<modules>
