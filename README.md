@@ -15,7 +15,8 @@ corrections are welcome — please open a pull request.
 
 | Project | Link | Notes |
 |---------|------|-------|
-| _none listed yet_ | | |
+| Apache Aries JPA | [apache/aries-jpa](https://github.com/apache/aries-jpa) | Long-established, widely used (e.g. in Apache Karaf) and the implementation this repository's TCK is run against. Also offers transaction management and `@PersistenceContext` injection beyond the specification. Works with several JPA providers such as EclipseLink, Hibernate and OpenJPA. |
+| OPS4J Pax JPA    | [ops4j/org.ops4j.pax.jpa](https://github.com/ops4j/org.ops4j.pax.jpa) | Very lightweight extender for the JPA Service 1.1 specification that works with any JPA provider (no provider-specific adapters needed): it publishes your persistence units as services and integrates with Configuration Admin and `DataSourceFactory`. Passes the full JPA TCK (28 of 28 tests, EclipseLink). |
 
 ## Build
 
