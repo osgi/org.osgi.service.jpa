@@ -58,6 +58,8 @@ tck.range: ${range;[===,==+);${version_cleanup;${1}}}
 
 # -runbundles is committed and verified by the build; after a dependency
 # change update it with: mvn bnd-resolver:resolve
+# slf4j 2 binds its provider once, at the first logger: slf4j starts at
+# level 1, before the implementation (all others at 2), or it logs nothing.
 -runbundles: \
 	assertj-core;version='${tck.range;${assertj.version}}',\
 	junit-jupiter-api;version='${tck.range;${junit-jupiter.version}}',\
@@ -70,6 +72,7 @@ tck.range: ${range;[===,==+);${version_cleanup;${1}}}
 	org.apache.aries.jpa.container;version='${tck.range;${org.apache.aries.jpa.container.version}}',\
 	org.apache.aries.jpa.eclipselink.adapter;version='${tck.range;${org.apache.aries.jpa.eclipselink.adapter.version}}',\
 	org.apache.aries.jpa.javax.persistence_2.1;version='${tck.range;${javax.persistence_2.1.version}}',\
+	org.apache.aries.spifly.dynamic.framework.extension;version='${tck.range;${org.apache.aries.spifly.dynamic.framework.extension.version}}',\
 	org.apache.felix.configadmin;version='${tck.range;${org.apache.felix.configadmin.version}}',\
 	org.apache.geronimo.specs.geronimo-jta_1.1_spec;version='${tck.range;${geronimo-jta_1.1_spec.version}}',\
 	org.eclipse.persistence.antlr;version='[3.2.0,3.2.1)',\
@@ -84,5 +87,5 @@ tck.range: ${range;[===,==+);${version_cleanup;${1}}}
 	org.osgi.test.cases.jpa;version='${tck.range;${revision}}',\
 	org.osgi.test.common;version='${tck.range;${osgi-test.version}}',\
 	org.osgi.test.junit5;version='${tck.range;${osgi-test.version}}',\
-	slf4j.api;version='${tck.range;${slf4j.version}}',\
-	slf4j.simple;version='${tck.range;${slf4j.version}}'
+	slf4j.api;version='${tck.range;${slf4j.version}}';startlevel=1,\
+	slf4j.simple;version='${tck.range;${slf4j.version}}';startlevel=1
